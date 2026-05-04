@@ -1,60 +1,55 @@
-import { useState } from 'react';
-import DoctorProfileModal from './DoctorProfileModal';
+import { MapPin, Calendar, Star, Clock } from 'lucide-react';
 
-const DoctorCard = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = () => setIsModalOpen(false);
-
-  const doctor = {
-    name: "Dr. Samantha Marie Sanchez",
-    specialty: "Counselor",
-    experience: 1,
-    clinic: "Online Clinic",
-    schedule: "Today, 08:00 AM - 10:00 PM",
-    fee: 350.00
-  };
-
+const DoctorCard = ({ doctor, onViewProfile, onBook }) => {
   return (
-    <>
-      <div className="bg-white rounded-lg shadow-md p-6 w-full">
-        <div className="flex justify-between items-center">
+    <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition">
+      <div className="p-5">
+        <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-xl font-bold text-gray-800">{doctor.name}</h3>
-            <p className="text-gray-600">{doctor.specialty}</p>
-            <p className="text-sm text-gray-500">{doctor.experience} yr experience</p>
-            <div className="flex gap-4 mt-2">
-              <span className="text-green-600 text-sm">✔ Online Consultation</span>
-              <span className="text-red-600 text-sm">✖ In-Person Consultation</span>
+            <h3 className="text-xl font-bold text-gray-800">Dr. {doctor.name}</h3>
+            <p className="text-primary font-medium mt-1">{doctor.specialty}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-1">
+                <Star size={16} className="text-yellow-400 fill-yellow-400" />
+                <span className="text-sm font-medium">{doctor.rating}</span>
+              </div>
+              <span className="text-gray-300">|</span>
+              <span className="text-sm text-gray-500">{doctor.experience} years exp</span>
             </div>
           </div>
-          
-          <div>
-            <p className="text-sm font-semibold text-gray-700">Earliest Available Schedule</p>
-            <p className="text-sm text-gray-600">{doctor.clinic}</p>
-            <p className="text-sm text-gray-600">{doctor.schedule}</p>
-            <div className="mt-2">
-              <p className="text-lg font-bold text-blue-600">Fee: ₱{doctor.fee}</p>
-            </div>
-          </div>
-          
-          <div className="flex gap-3">
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-              BOOK APPOINTMENT
-            </button>
-            <button 
-              onClick={openModal}
-              className="border border-blue-600 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 transition"
-            >
-              VIEW PROFILE
-            </button>
+          <div className="text-right">
+            <p className="text-lg font-bold text-primary">₱{doctor.fee}</p>
+            <p className="text-xs text-gray-500">per session</p>
           </div>
         </div>
-      </div>
 
-      <DoctorProfileModal doctor={doctor} isOpen={isModalOpen} onClose={closeModal} />
-    </>
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <MapPin size={16} />
+            <span>{doctor.location}</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Clock size={16} />
+            <span>{doctor.availability}</span>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-5">
+          <button
+            onClick={() => onViewProfile(doctor)}
+            className="flex-1 px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/5 transition font-medium"
+          >
+            View Profile
+          </button>
+          <button
+            onClick={() => onBook(doctor)}
+            className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition font-medium"
+          >
+            Book Now
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 

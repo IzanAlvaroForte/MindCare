@@ -1,49 +1,55 @@
-import Header from '../components/Layout/Header';
+import { useState, useEffect } from 'react';
+import WelcomeBanner from '../components/Home/WelcomeBanner';
+import QuickActions from '../components/Home/QuickActions';
+import UpcomingAppointments from '../components/Home/UpcomingAppointments';
 
 const Home = () => {
-  return (
-    <div className="h-full w-full flex flex-col">
-      <Header />
-      
-      <main className="relative flex-1">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-black opacity-50"></div>
-          <img src="/PICS/pictures/2nd_page_BG.png" 
-            alt="Background" 
-            className="w-full h-full object-cover object-center"
-          />
-        </div>
-        
-        <div className="relative z-10 flex h-full p-12 flex-col gap-12">
-          <div className="flex gap-12 items-center w-full justify-around">
-            <div className="flex items-center gap-4 bg-secondary/80 p-6 rounded-lg">
-              <p className="text-xl font-bold text-white">
-                Got an invitation code? <br />
-                <span className="text-lg font-light">Enter your code manually</span>
-              </p>
-              <img src="/PICS/pictures/home_page_1.png" alt="Invitation" className="h-18" />
-            </div>
-            <div className="flex items-center gap-4 bg-secondary/80 p-4 rounded-lg">
-              <p className="text-xl font-bold text-white">
-                Need a Doctor <br />
-                <span className="text-lg font-light">Find a right one for you</span>
-              </p>
-              <img src="/PICS/pictures/home_page_2.png" alt="Doctor" className="h-24" />
-            </div>
-          </div>
+  const [userName, setUserName] = useState('User');
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-          <div className="flex flex-col gap-8">
-            <p className="text-xl font-bold text-start">EXPLORE</p>
-            <div className="flex w-full p-2 justify-between gap-4 bg-white rounded-lg">
-              <p className="text-2xl text-red-500">
-                Follow <br />
-                <span className="text-black">Booking Instructions</span>
-              </p>
-              <img src="/PICS/pictures/home_page_1.png" alt="Session" className="h-28" />
-            </div>
-          </div>
-        </div>
-      </main>
+  useEffect(() => {
+    // Load user data
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUserName(JSON.parse(storedUser).name);
+    }
+
+    // Load appointments (mock for now)
+    setTimeout(() => {
+      setAppointments([
+        { id: 1, doctorName: 'Dr. Samantha Sanchez', specialty: 'Counselor', date: '2024-05-10', time: '10:00 AM', status: 'CONFIRMED' },
+        { id: 2, doctorName: 'Dr. John Reyes', specialty: 'Psychiatrist', date: '2024-05-15', time: '02:00 PM', status: 'PENDING' },
+      ]);
+      setLoading(false);
+    }, 500);
+  }, []);
+
+  const handleCancel = (id) => {
+    setAppointments(appointments.filter(apt => apt.id !== id));
+  };
+
+  const handleReschedule = (id) => {
+    console.log('Reschedule appointment:', id);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <WelcomeBanner userName={userName} />
+      <QuickActions />
+      <UpcomingAppointments 
+        appointments={appointments}
+        onCancel={handleCancel}
+        onReschedule={handleReschedule}
+      />
     </div>
   );
 };

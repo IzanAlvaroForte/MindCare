@@ -1,35 +1,52 @@
 import { NavLink } from 'react-router-dom';
+import { Home, Stethoscope, Calendar, CalendarPlus, User, Settings, LogOut } from 'lucide-react';
 
 const Sidebar = () => {
   const navItems = [
-    { path: '/', label: 'Home' },
-    { path: '/doctors', label: 'Doctors' },
-    { path: '/services', label: 'Services' },
-    { path: '/files', label: 'Files' },
-    { path: '/settings', label: 'Settings' },
+    { path: '/home', label: 'Dashboard', icon: Home },
+    { path: '/doctors', label: 'Doctors', icon: Stethoscope },
+    { path: '/booking', label: 'Book Appointment', icon: CalendarPlus },
+    { path: '/my-appointments', label: 'My Appointments', icon: Calendar },
+    { path: '/profile', label: 'Profile', icon: User },
+    { path: '/settings', label: 'Settings', icon: Settings },
   ];
 
   return (
-    <div className="h-full w-1/4 flex flex-col items-center p-6">
-      <div className="mb-12">
-        <img src="/PICS/pictures/LOGO_1.png" alt="Logo" className="h-36 w-auto" />
+    <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
+      <div className="p-6 border-b">
+        <img src="/PICS/pictures/LOGO_1.png" alt="Logo" className="h-10 w-auto" />
+        <p className="text-sm text-gray-500 mt-2">Patient Portal</p>
       </div>
       
-      <nav className="flex flex-col w-full gap-2 px-4 text-2xl">
+      <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) => 
-              `block w-full text-center py-3 px-4 rounded-lg duration-200 cursor-pointer ${
-                isActive ? 'bg-secondary text-white' : 'hover:bg-secondary'
+              `flex items-center gap-3 px-4 py-2 rounded-lg transition ${
+                isActive ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'
               }`
             }
           >
-            {item.label}
+            <item.icon size={18} />
+            <span>{item.label}</span>
           </NavLink>
         ))}
       </nav>
+      
+      <div className="p-4 border-t">
+        <button 
+          onClick={() => {
+            localStorage.clear();
+            window.location.href = '/';
+          }}
+          className="w-full flex items-center gap-3 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition"
+        >
+          <LogOut size={18} />
+          Logout
+        </button>
+      </div>
     </div>
   );
 };
