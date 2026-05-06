@@ -19,7 +19,6 @@ const Settings = () => {
     twoFactor: false
   });
   const [preferences, setPreferences] = useState({
-    theme: 'light',
     timeFormat: '12h'
   });
   
@@ -44,6 +43,9 @@ const Settings = () => {
     localStorage.setItem('userPrivacy', JSON.stringify(privacy));
     localStorage.setItem('userPreferences', JSON.stringify(preferences));
     
+    // Dispatch custom event to notify Header about changes
+    window.dispatchEvent(new Event('settingsSaved'));
+    
     setSaveMessage('Settings saved successfully!');
     setTimeout(() => setSaveMessage(''), 3000);
   };
@@ -54,10 +56,6 @@ const Settings = () => {
 
   const handlePrivacyToggle = (key) => {
     setPrivacy({ ...privacy, [key]: !privacy[key] });
-  };
-
-  const handleThemeChange = (theme) => {
-    setPreferences({ ...preferences, theme });
   };
 
   const handleTimeFormatChange = (format) => {
@@ -107,7 +105,6 @@ const Settings = () => {
         
         <PreferencesSettings 
           preferences={preferences}
-          onThemeChange={handleThemeChange}
           onTimeFormatChange={handleTimeFormatChange}
         />
       </div>

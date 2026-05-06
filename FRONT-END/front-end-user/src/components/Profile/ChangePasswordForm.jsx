@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Lock, Eye, EyeOff } from 'lucide-react';
+import { changePassword } from '../../services/api';
 
-const ChangePasswordForm = ({ onChangePassword }) => {
+const ChangePasswordForm = () => {
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
   const [formData, setFormData] = useState({
     currentPassword: '',
@@ -9,13 +10,16 @@ const ChangePasswordForm = ({ onChangePassword }) => {
     confirmPassword: ''
   });
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setErrors({});
+    setMessage({ type: '', text: '' });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validation
@@ -30,8 +34,26 @@ const ChangePasswordForm = ({ onChangePassword }) => {
       return;
     }
     
-    onChangePassword(formData);
-    setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    setLoading(true);
+    
+    try {
+      const response = await changePassword({
+        currentPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
+        confirmPassword: formData.confirmPassword
+      });
+      
+      setMessage({ type: 'success', text: 'Password changed successfully!' });
+      setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+      
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'Failed to change password' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -39,6 +61,14 @@ const ChangePasswordForm = ({ onChangePassword }) => {
       <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
         <Lock size={20} /> Change Password
       </h2>
+      
+      {message.text && (
+        <div className={`p-3 rounded-lg mb-4 text-sm ${
+          message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+        }`}>
+          {message.text}
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -106,9 +136,10 @@ const ChangePasswordForm = ({ onChangePassword }) => {
 
         <button
           type="submit"
-          className="w-full bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition"
+          disabled={loading}
+          className="w-full bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition disabled:opacity-50"
         >
-          Update Password
+          {loading ? 'Updating...' : 'Update Password'}
         </button>
       </form>
     </div>

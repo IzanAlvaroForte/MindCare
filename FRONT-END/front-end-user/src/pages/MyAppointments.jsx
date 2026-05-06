@@ -1,85 +1,41 @@
 import { useState, useEffect } from 'react';
-import AppointmentFilters from '../components/Appointments/AppointmentFilters';
-import AppointmentsList from '../components/Appointments/AppointmentsList';
-import CancelModal from '../components/Appointments/CancelModal';
-import AppointmentDetailsModal from '../components/Appointments/AppointmentDetailsModal';
+import { getUserAppointments, cancelAppointment } from '../services/api';
+import { Calendar, Clock, User, Stethoscope } from 'lucide-react';
 
 const MyAppointments = () => {
   const [appointments, setAppointments] = useState([]);
-  const [filteredAppointments, setFilteredAppointments] = useState([]);
-  const [filterStatus, setFilterStatus] = useState('ALL');
-  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  
-  // Modal states
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
-  // Load appointments from localStorage (mock)
   useEffect(() => {
-    const loadAppointments = () => {
-      const savedBookings = localStorage.getItem('userBookings');
-      if (savedBookings) {
-        const bookings = JSON.parse(savedBookings);
-        // Add IDs to mock bookings
-        const withIds = bookings.map((booking, idx) => ({ ...booking, id: idx + 1 }));
-        setAppointments(withIds);
-        setFilteredAppointments(withIds);
-      } else {
-        // Mock data if no bookings exist
-        const mockAppointments = [
-          { id: 1, doctorName: 'Samantha Sanchez', doctorSpecialty: 'Counselor', date: '2024-05-10', time: '10:00 AM', status: 'CONFIRMED', location: 'Online Clinic', patientName: 'John Doe', patientEmail: 'john@example.com', patientPhone: '09123456789', reason: 'Anxiety and stress', fee: 500 },
-          { id: 2, doctorName: 'John Reyes', doctorSpecialty: 'Psychiatrist', date: '2024-05-15', time: '02:00 PM', status: 'PENDING', location: 'Quezon City', patientName: 'John Doe', patientEmail: 'john@example.com', patientPhone: '09123456789', reason: 'Medication review', fee: 1000 },
-        ];
-        setAppointments(mockAppointments);
-        setFilteredAppointments(mockAppointments);
-      }
-      setLoading(false);
-    };
-
     loadAppointments();
   }, []);
 
-  // Apply filters
-  useEffect(() => {
-    let filtered = [...appointments];
-    
-    if (filterStatus !== 'ALL') {
-      filtered = filtered.filter(apt => apt.status === filterStatus);
+  const loadAppointments = async () => {
+    try {
+      const data = await getUserAppointments();
+      setAppointments(data);
+    } catch (error) {
+      console.error('Error loading appointments:', error);
+    } finally {
+      setLoading(false);
     }
-    
-    if (searchTerm) {
-      filtered = filtered.filter(apt => 
-        apt.doctorName.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  };
+
+  const handleCancel = async (id) => {
+    if (window.confirm('Are you sure you want to cancel this appointment?')) {
+      await cancelAppointment(id);
+      loadAppointments();
     }
-    
-    setFilteredAppointments(filtered);
-  }, [filterStatus, searchTerm, appointments]);
-
-  const handleCancel = (appointment) => {
-    setSelectedAppointment(appointment);
-    setIsCancelModalOpen(true);
   };
 
-  const confirmCancel = () => {
-    const updatedAppointments = appointments.map(apt =>
-      apt.id === selectedAppointment.id ? { ...apt, status: 'CANCELLED' } : apt
-    );
-    setAppointments(updatedAppointments);
-    setIsCancelModalOpen(false);
-    setSelectedAppointment(null);
-  };
-
-  const handleReschedule = (appointment) => {
-    // Navigate to booking page with reschedule mode
-    window.location.href = `/booking?doctor=${appointment.doctorId}&reschedule=${appointment.id}`;
-  };
-
-  const handleViewDetails = (appointment) => {
-    setSelectedAppointment(appointment);
-    setIsDetailsModalOpen(true);
+  const getStatusColor = (status) => {
+    const colors = {
+      PENDING: 'bg-yellow-100 text-yellow-800',
+      CONFIRMED: 'bg-green-100 text-green-800',
+      COMPLETED: 'bg-blue-100 text-blue-800',
+      CANCELLED: 'bg-red-100 text-red-800'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
   if (loading) {
@@ -92,41 +48,51 @@ const MyAppointments = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">My Appointments</h1>
-        <p className="text-gray-500 mt-1">View and manage your scheduled consultations</p>
-      </div>
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">My Appointments</h1>
 
-      {/* Filters */}
-      <AppointmentFilters
-        filterStatus={filterStatus}
-        onFilterChange={setFilterStatus}
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-      />
-
-      {/* Appointments List */}
-      <AppointmentsList
-        appointments={filteredAppointments}
-        onViewDetails={handleViewDetails}
-        onCancel={handleCancel}
-        onReschedule={handleReschedule}
-      />
-
-      {/* Modals */}
-      <CancelModal
-        isOpen={isCancelModalOpen}
-        onClose={() => setIsCancelModalOpen(false)}
-        onConfirm={confirmCancel}
-        appointment={selectedAppointment}
-      />
-
-      <AppointmentDetailsModal
-        isOpen={isDetailsModalOpen}
-        onClose={() => setIsDetailsModalOpen(false)}
-        appointment={selectedAppointment}
-      />
+      {appointments.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-xl shadow-md">
+          <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">No appointments yet</p>
+          <a href="/doctors" className="inline-block mt-4 bg-primary text-white px-6 py-2 rounded-lg">Book Now</a>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {appointments.map((apt) => (
+            <div key={apt.id} className="bg-white rounded-xl shadow-md p-5">
+              <div className="flex justify-between items-start">
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Stethoscope className="text-primary" size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">Dr. {apt.doctor.name}</h3>
+                    <p className="text-gray-500">{apt.doctor.specialty}</p>
+                    <div className="flex gap-4 mt-2 text-sm text-gray-600">
+                      <span className="flex items-center gap-1"><Calendar size={14} /> {apt.appointmentDate}</span>
+                      <span className="flex items-center gap-1"><Clock size={14} /> {apt.appointmentTime}</span>
+                    </div>
+                    {apt.reason && <p className="text-sm text-gray-500 mt-2">Reason: {apt.reason}</p>}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(apt.status)}`}>
+                    {apt.status}
+                  </span>
+                  {(apt.status === 'PENDING' || apt.status === 'CONFIRMED') && (
+                    <button
+                      onClick={() => handleCancel(apt.id)}
+                      className="block mt-2 text-sm text-red-600 hover:text-red-800"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

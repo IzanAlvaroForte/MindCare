@@ -1,34 +1,71 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AuthToggle from '../components/Auth/AuthToggle';
 import SignInForm from '../components/Auth/SignInForm';
 import SignUpForm from '../components/Auth/SignUpForm';
 import SuccessMessage from '../components/Auth/SuccessMessage';
+import { login, register } from '../Services/api';
 
 const SignUpIn = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const navigate = useNavigate();
 
   const handleSignIn = async (data) => {
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Sign In:', data);
+    setErrorMessage('');
+    
+    try {
+      const response = await login({
+        username: data.username,
+        password: data.password
+      });
+      
+      console.log('Login response:', response);
       setSuccessMessage('Login successful! Redirecting...');
+      
+      // Redirect to home page after successful login
+      setTimeout(() => {
+        navigate('/home');
+      }, 1500);
+      
+    } catch (err) {
+      console.error('Login error:', err);
+      setErrorMessage(err.message || 'Invalid username or password');
+    } finally {
       setLoading(false);
-      setTimeout(() => setSuccessMessage(''), 3000);
-    }, 1500);
+    }
   };
 
   const handleSignUp = async (data) => {
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Sign Up:', data);
-      setSuccessMessage('Account created! Redirecting...');
+    setErrorMessage('');
+    
+    try {
+      const response = await register({
+        username: data.username,
+        email: data.email,
+        password: data.password,
+        phone: data.phone || ''
+      });
+      
+      console.log('Register response:', response);
+      setSuccessMessage('Account created! Please login.');
+      
+      // Switch to login form after successful registration
+      setTimeout(() => {
+        setIsLogin(true);
+        setSuccessMessage('');
+      }, 2000);
+      
+    } catch (err) {
+      console.error('Register error:', err);
+      setErrorMessage(err.message || 'Registration failed. Username or email may already exist.');
+    } finally {
       setLoading(false);
-      setTimeout(() => setSuccessMessage(''), 3000);
-    }, 1500);
+    }
   };
 
   return (
@@ -47,6 +84,12 @@ const SignUpIn = () => {
         <div className="w-full max-w-5xl mx-auto">
           
           <SuccessMessage message={successMessage} />
+          
+          {errorMessage && (
+            <div className="bg-red-500/80 text-white px-6 py-3 rounded-lg shadow-lg mb-4 text-center">
+              {errorMessage}
+            </div>
+          )}
 
           <AuthToggle isLogin={isLogin} onToggle={setIsLogin} />
 

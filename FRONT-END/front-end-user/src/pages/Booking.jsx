@@ -1,138 +1,125 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import DoctorInfo from '../components/Booking/DoctorInfo';
-import DateTimeSelector from '../components/Booking/DateTimeSelector';
-import PatientForm from '../components/Booking/PatientForm';
-import BookingSummary from '../components/Booking/BookingSummary';
-import BookingSuccess from '../components/Booking/BookingSuccess';
-
-// Mock doctors data (should match Doctors page)
-const MOCK_DOCTORS = [
-  { id: 1, name: 'Samantha Sanchez', specialty: 'Counselor', rating: 4.9, experience: 5, fee: 500, location: 'Online Clinic' },
-  { id: 2, name: 'John Reyes', specialty: 'Psychiatrist', rating: 4.8, experience: 10, fee: 1000, location: 'Quezon City' },
-  { id: 3, name: 'Maria Santos', specialty: 'Psychologist', rating: 4.9, experience: 7, fee: 800, location: 'Online Clinic' },
-];
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Calendar, Clock, Stethoscope } from 'lucide-react';
+import { bookAppointment, getCurrentUser, getDoctorById } from '../services/api';
 
 const Booking = () => {
   const [searchParams] = useSearchParams();
-  const doctorId = searchParams.get('doctor');
-  
-  const [doctor, setDoctor] = useState(null);
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
+  const navigate = useNavigate();
+  const doctorId = searchParams.get('doctorId');
+  const doctorName = searchParams.get('doctorName');
+  const fee = searchParams.get('fee');
+
   const [formData, setFormData] = useState({
-    patientName: '',
-    patientEmail: '',
-    patientPhone: '',
+    date: '',
+    time: '',
     reason: ''
   });
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [bookingDetails, setBookingDetails] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    // Load doctor from URL param or localStorage
-    if (doctorId) {
-      const found = MOCK_DOCTORS.find(d => d.id === parseInt(doctorId));
-      setDoctor(found);
-    }
-  }, [doctorId]);
-
-  const handleFormChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate
-    if (!selectedDate || !selectedTime || !formData.patientName || !formData.patientEmail || !formData.patientPhone) {
-      alert('Please fill in all required fields');
+    setLoading(true);
+    setError('');
+
+    const user = getCurrentUser();
+    if (!user) {
+      navigate('/signupin');
       return;
     }
 
-    // Create booking
-    const booking = {
-      doctorId: doctor?.id,
-      doctorName: doctor?.name,
-      date: selectedDate,
-      time: selectedTime,
-      ...formData,
-      status: 'PENDING',
-      bookedAt: new Date().toISOString()
-    };
-
-    // Save to localStorage (mock)
-    const existingBookings = JSON.parse(localStorage.getItem('userBookings') || '[]');
-    existingBookings.push(booking);
-    localStorage.setItem('userBookings', JSON.stringify(existingBookings));
-
-    setBookingDetails(booking);
-    setIsSubmitted(true);
+    try {
+      await bookAppointment({
+        userId: user.id,
+        doctorId: parseInt(doctorId),
+        date: formData.date,
+        time: formData.time,
+        reason: formData.reason
+      });
+      alert('Appointment booked successfully!');
+      navigate('/my-appointments');
+    } catch (err) {
+      setError('Failed to book appointment');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (!doctor) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <p className="text-gray-500">Loading doctor information...</p>
-          <a href="/doctors" className="text-primary mt-4 inline-block">Back to Doctors</a>
-        </div>
-      </div>
-    );
-  }
-
-  if (isSubmitted) {
-    return (
-      <div className="max-w-2xl mx-auto p-6">
-        <BookingSuccess bookingDetails={bookingDetails} onClose={() => setIsSubmitted(false)} />
-      </div>
-    );
-  }
+  const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Book an Appointment</h1>
-        <p className="text-gray-500 mt-1">Fill in the details to schedule your consultation</p>
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Left Column - Forms */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <DoctorInfo doctor={doctor} />
-            
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <DateTimeSelector 
-                selectedDate={selectedDate}
-                selectedTime={selectedTime}
-                onDateChange={setSelectedDate}
-                onTimeChange={setSelectedTime}
-              />
-              
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Patient Information</h3>
-                <PatientForm formData={formData} onChange={handleFormChange} />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary/90 transition"
-              >
-                Confirm Booking
-              </button>
-            </form>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">Book Appointment</h1>
+        
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+            <p className="font-semibold">Doctor: {doctorName}</p>
+            <p className="text-gray-600">Fee: ₱{fee}</p>
           </div>
-        </div>
 
-        {/* Right Column - Summary */}
-        <div>
-          <BookingSummary 
-            doctor={doctor}
-            selectedDate={selectedDate}
-            selectedTime={selectedTime}
-            formData={formData}
-          />
+          {error && (
+            <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4">{error}</div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                <Calendar size={16} /> Date
+              </label>
+              <input
+                type="date"
+                min={today}
+                required
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                <Clock size={16} /> Time
+              </label>
+              <select
+                required
+                value={formData.time}
+                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Select time slot</option>
+                <option value="09:00">09:00 AM</option>
+                <option value="10:00">10:00 AM</option>
+                <option value="11:00">11:00 AM</option>
+                <option value="13:00">01:00 PM</option>
+                <option value="14:00">02:00 PM</option>
+                <option value="15:00">03:00 PM</option>
+                <option value="16:00">04:00 PM</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                <Stethoscope size={16} /> Reason for Visit
+              </label>
+              <textarea
+                rows="3"
+                value={formData.reason}
+                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+                placeholder="Briefly describe your concerns..."
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary text-white py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50"
+            >
+              {loading ? 'Booking...' : 'Confirm Booking'}
+            </button>
+          </form>
         </div>
       </div>
     </div>

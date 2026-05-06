@@ -1,37 +1,57 @@
 import { useState, useEffect } from 'react';
-import WelcomeBanner from '../components/Home/WelcomeBanner';
-import QuickActions from '../components/Home/QuickActions';
-import UpcomingAppointments from '../components/Home/UpcomingAppointments';
+import { Calendar, Clock, CheckCircle } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { getUserAppointments } from '../services/api';
+import QuickActions from '../components/Dashboard/QuickActions';
+import RecentActivity from '../components/Dashboard/RecentActivity';
+import StatsCard from '../components/Dashboard/StatsCard';
 
 const Home = () => {
-  const [userName, setUserName] = useState('User');
+  const { user, userName, userEmail } = useAuth();
   const [appointments, setAppointments] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    upcoming: 0,
+    completed: 0
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load user data
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUserName(JSON.parse(storedUser).name);
-    }
-
-    // Load appointments (mock for now)
-    setTimeout(() => {
-      setAppointments([
-        { id: 1, doctorName: 'Dr. Samantha Sanchez', specialty: 'Counselor', date: '2024-05-10', time: '10:00 AM', status: 'CONFIRMED' },
-        { id: 2, doctorName: 'Dr. John Reyes', specialty: 'Psychiatrist', date: '2024-05-15', time: '02:00 PM', status: 'PENDING' },
-      ]);
-      setLoading(false);
-    }, 500);
+    loadAppointments();
   }, []);
 
-  const handleCancel = (id) => {
-    setAppointments(appointments.filter(apt => apt.id !== id));
+  const loadAppointments = async () => {
+    setLoading(true);
+    
+    try {
+      // Fetch real appointments from backend
+      const data = await getUserAppointments();
+      setAppointments(data || []);
+      
+      // Calculate stats from real data
+      const total = data?.length || 0;
+      const upcoming = data?.filter(apt => apt.status === 'PENDING' || apt.status === 'CONFIRMED').length || 0;
+      const completed = data?.filter(apt => apt.status === 'COMPLETED').length || 0;
+      
+      setStats({
+        total,
+        upcoming,
+        completed
+      });
+    } catch (error) {
+      console.error('Error loading appointments:', error);
+      setAppointments([]);
+      setStats({ total: 0, upcoming: 0, completed: 0 });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleReschedule = (id) => {
-    console.log('Reschedule appointment:', id);
-  };
+  const statCards = [
+    { title: 'Total Appointments', value: stats.total, icon: Calendar, color: 'bg-blue-500' },
+    { title: 'Upcoming', value: stats.upcoming, icon: Clock, color: 'bg-green-500' },
+    { title: 'Completed', value: stats.completed, icon: CheckCircle, color: 'bg-purple-500' },
+  ];
 
   if (loading) {
     return (
@@ -43,13 +63,24 @@ const Home = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <WelcomeBanner userName={userName} />
+      {/* Welcome Section */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-800">Welcome back, {userName}! 👋</h1>
+        <p className="text-gray-500 mt-1">{userEmail}</p>
+      </div>
+
+      {/* Stats Cards - Shows 0 if no appointments */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {statCards.map((stat, idx) => (
+          <StatsCard key={idx} {...stat} />
+        ))}
+      </div>
+
+      {/* Quick Actions */}
       <QuickActions />
-      <UpcomingAppointments 
-        appointments={appointments}
-        onCancel={handleCancel}
-        onReschedule={handleReschedule}
-      />
+
+      {/* Recent Activity - Shows "No appointments" if empty */}
+      <RecentActivity appointments={appointments} />
     </div>
   );
 };

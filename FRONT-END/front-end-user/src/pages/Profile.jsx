@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import { getCurrentUser } from '../services/api';
 import ProfileHeader from '../components/Profile/ProfileHeader';
 import ProfileInfoForm from '../components/Profile/ProfileInfoForm';
 import ChangePasswordForm from '../components/Profile/ChangePasswordForm';
 import AccountStats from '../components/Profile/AccountStats';
 import DeleteAccountModal from '../components/Profile/DeleteAccountModal';
+import { deleteAccount } from '../services/api';
 
 const Profile = () => {
+  const { user: authUser, logout } = useAuth();
   const [user, setUser] = useState({
     name: '',
+    username: '',
     email: '',
     phone: '',
     location: '',
@@ -20,7 +25,6 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Mock stats
   const [stats, setStats] = useState({
     totalAppointments: 0,
     completedAppointments: 0,
@@ -29,40 +33,38 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    // Load user data from localStorage
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      setUser(userData);
-    } else {
-      // Mock data
-      setUser({
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        phone: '+63 912 345 6789',
-        location: 'Manila, Philippines',
-        joinDate: 'January 2024',
-        totalAppointments: 5
-      });
-    }
-
-    // Load stats
-    const bookings = JSON.parse(localStorage.getItem('userBookings') || '[]');
-    const completed = bookings.filter(b => b.status === 'COMPLETED').length;
-    
-    setStats({
-      totalAppointments: bookings.length || 5,
-      completedAppointments: completed || 3,
-      hoursTherapy: (bookings.length * 1) || 5,
-      memberSince: 'Jan 2024'
-    });
-
-    setLoading(false);
+    loadUserData();
   }, []);
 
+  const loadUserData = () => {
+    const userData = getCurrentUser();
+    if (userData) {
+      setUser({
+        name: userData.username || 'User',
+        username: userData.username,
+        email: userData.email,
+        phone: userData.phone || '',
+        location: userData.location || '',
+        joinDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        totalAppointments: 0
+      });
+      
+      setStats({
+        totalAppointments: 0,
+        completedAppointments: 0,
+        hoursTherapy: 0,
+        memberSince: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      });
+    }
+    setLoading(false);
+  };
+
   const handleProfileUpdate = () => {
-    // Save to localStorage
-    localStorage.setItem('user', JSON.stringify(user));
+    // Update user in localStorage
+    const currentUser = getCurrentUser();
+    const updatedUser = { ...currentUser, ...user };
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    
     setSuccessMessage('Profile updated successfully!');
     setIsEditing(false);
     setTimeout(() => setSuccessMessage(''), 3000);
@@ -74,10 +76,15 @@ const Profile = () => {
     setTimeout(() => setSuccessMessage(''), 3000);
   };
 
-  const handleDeleteAccount = () => {
-    console.log('Account deleted');
-    localStorage.clear();
-    window.location.href = '/';
+  const handleDeleteAccount = async () => {
+    try {
+      await deleteAccount();
+      localStorage.clear();
+      logout(); // Your logout function
+    } catch (err) {
+      setErrorMessage(err.message || 'Failed to delete account');
+      setIsDeleteModalOpen(false);
+    }
   };
 
   const handleFieldChange = (field, value) => {
@@ -94,7 +101,6 @@ const Profile = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Success Message */}
       {successMessage && (
         <div className="fixed top-20 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
           {successMessage}
@@ -114,7 +120,7 @@ const Profile = () => {
               isEditing={isEditing}
               setIsEditing={setIsEditing}
             />
-            <ChangePasswordForm onChangePassword={handleChangePassword} />
+            <ChangePasswordForm />
           </div>
 
           {/* Right Column */}
