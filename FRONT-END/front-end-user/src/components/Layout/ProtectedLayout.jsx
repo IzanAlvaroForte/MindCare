@@ -1,15 +1,25 @@
-import { Outlet, Navigate } from 'react-router-dom';  // ← Add Navigate here
+import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
 const ProtectedLayout = () => {
   const token = localStorage.getItem('token');
+  const user = localStorage.getItem('user');
   
-  // If not logged in, redirect to login page
-//   if (!token) {
-//     return <Navigate to="/signupin" replace />;
-//   }
-
+  // Check authentication
+  if (!token) {
+    return <Navigate to="/signupin" replace />;
+  }
+  
+  // Check role
+  if (user) {
+    const userData = JSON.parse(user);
+    if (userData.role !== 'USER') {
+      localStorage.clear();
+      return <Navigate to="/signupin" replace />;
+    }
+  }
+  
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />

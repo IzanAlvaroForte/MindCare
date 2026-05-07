@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "css": "npx @tailwindcss/cli -i ./src/input.css -o ./src/output.css --watch"
+    "css": "npx @tailwindcss/cli -i ./src/input.css -o ./src/output.css --watch",
+    "start": "npm run css & npm run dev" 
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.2.4",

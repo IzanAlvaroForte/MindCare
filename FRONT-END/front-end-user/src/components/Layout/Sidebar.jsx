@@ -1,11 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Stethoscope, Calendar, CalendarPlus, User, Settings, LogOut } from 'lucide-react';
+import { Home, Stethoscope, Calendar, User, Settings, LogOut } from 'lucide-react';
 
 const Sidebar = () => {
   const navItems = [
     { path: '/home', label: 'Dashboard', icon: Home },
     { path: '/doctors', label: 'Doctors', icon: Stethoscope },
-    { path: '/booking', label: 'Book Appointment', icon: CalendarPlus },
     { path: '/my-appointments', label: 'My Appointments', icon: Calendar },
     { path: '/profile', label: 'Profile', icon: User },
     { path: '/settings', label: 'Settings', icon: Settings },
@@ -23,7 +22,7 @@ const Sidebar = () => {
           <NavLink
             key={item.path}
             to={item.path}
-            className={({ isActive }) => 
+            className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-2 rounded-lg transition ${
                 isActive ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'
               }`
@@ -36,7 +35,7 @@ const Sidebar = () => {
       </nav>
       
       <div className="p-4 border-t">
-        <button 
+        <button
           onClick={() => {
             localStorage.clear();
             window.location.href = '/';

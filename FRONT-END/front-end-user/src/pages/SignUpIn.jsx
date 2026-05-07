@@ -23,16 +23,20 @@ const SignUpIn = () => {
         password: data.password
       });
       
-      console.log('Login response:', response);
-      setSuccessMessage('Login successful! Redirecting...');
+      // Check if role is USER (not ADMIN)
+      if (response.role !== 'USER') {
+        setErrorMessage('Invalid user credentials');
+        localStorage.clear();
+        setLoading(false);
+        return;
+      }
       
-      // Redirect to home page after successful login
+      setSuccessMessage('Login successful! Redirecting...');
       setTimeout(() => {
         navigate('/home');
       }, 1500);
       
     } catch (err) {
-      console.error('Login error:', err);
       setErrorMessage(err.message || 'Invalid username or password');
     } finally {
       setLoading(false);
