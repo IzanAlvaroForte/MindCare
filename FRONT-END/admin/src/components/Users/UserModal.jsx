@@ -10,10 +10,10 @@ const UserModal = ({ isOpen, onClose, user, onSave }) => {
     status: 'ACTIVE'
   });
 
-  useEffect(() => {
+ useEffect(() => {
     if (user) {
       setFormData({
-        name: user.name || '',
+        name: user.name || user.username || '',
         email: user.email || '',
         phone: user.phone || '',
         role: user.role || 'USER',
@@ -32,6 +32,7 @@ const UserModal = ({ isOpen, onClose, user, onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    console.log('Submitting form data:', formData); // ← ADD THIS
     onSave(formData);
     onClose();
   };

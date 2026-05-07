@@ -40,8 +40,20 @@ const DoctorModal = ({ isOpen, onClose, doctor, onSave }) => {
   }, [doctor, isOpen]);
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(formData);
+  e.preventDefault();
+  
+  // Only send fields that have values
+  const dataToSave = {};
+    if (formData.name) dataToSave.name = formData.name;
+    if (formData.specialty) dataToSave.specialty = formData.specialty;
+    if (formData.email) dataToSave.email = formData.email;
+    if (formData.phone) dataToSave.phone = formData.phone;
+    if (formData.license) dataToSave.license = formData.license;
+    if (formData.experience) dataToSave.experience = parseInt(formData.experience);
+    if (formData.fee) dataToSave.fee = parseFloat(formData.fee);
+    if (formData.status) dataToSave.status = formData.status;
+    
+    onSave(dataToSave);
     onClose();
   };
 

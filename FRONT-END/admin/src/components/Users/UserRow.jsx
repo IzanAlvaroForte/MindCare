@@ -6,7 +6,7 @@ const UserRow = ({ user, onView, onEdit, onDelete }) => {
     <tr className="hover:bg-gray-50 transition">
       <td className="px-6 py-4">
         <div>
-          <p className="font-medium text-gray-900">{user.name}</p>
+          <p className="font-medium text-gray-900">{user.name || user.username}</p>
           <p className="text-sm text-gray-500">{user.email}</p>
         </div>
       </td>

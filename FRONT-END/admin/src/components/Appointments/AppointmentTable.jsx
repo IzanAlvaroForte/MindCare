@@ -1,6 +1,16 @@
+import { Calendar } from 'lucide-react';
 import AppointmentRow from './AppointmentRow';
 
-const AppointmentTable = ({ appointments, onView, onConfirm, onCancel, onReschedule }) => {
+const AppointmentTable = ({ appointments, onView, onConfirm, onCancel, onComplete }) => {
+  if (appointments.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Calendar size={48} className="text-gray-300 mx-auto mb-3" />
+        <p className="text-gray-500">No appointments found</p>
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -22,7 +32,7 @@ const AppointmentTable = ({ appointments, onView, onConfirm, onCancel, onResched
               onView={onView}
               onConfirm={onConfirm}
               onCancel={onCancel}
-              onReschedule={onReschedule}
+              onComplete={onComplete}
             />
           ))}
         </tbody>

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Save, CheckCircle, User, Bell, Database, Download, RefreshCw } from 'lucide-react';
+import { Save, CheckCircle, User, Bell, Database, Download, RefreshCw, Loader2 } from 'lucide-react';
+import { getAdminProfile, updateAdminProfile, getNotificationSettings, updateNotificationSettings } from '../services/api';
 
 const Settings = () => {
   const [profile, setProfile] = useState({
-    name: 'Admin User',
-    email: 'admin@mindcare.com',
-    phone: '+63 912 345 6789'
+    name: '',
+    email: '',
+    phone: ''
   });
   
   const [notifications, setNotifications] = useState({
@@ -13,23 +14,63 @@ const Settings = () => {
     sms: false
   });
   
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [showSaveMessage, setShowSaveMessage] = useState(false);
+  const [error, setError] = useState('');
 
-  // Load settings from localStorage on mount
   useEffect(() => {
-    const savedProfile = localStorage.getItem('adminProfile');
-    const savedNotifications = localStorage.getItem('adminNotifications');
-    
-    if (savedProfile) setProfile(JSON.parse(savedProfile));
-    if (savedNotifications) setNotifications(JSON.parse(savedNotifications));
+    loadSettings();
   }, []);
 
-  const handleSaveAll = () => {
-    localStorage.setItem('adminProfile', JSON.stringify(profile));
-    localStorage.setItem('adminNotifications', JSON.stringify(notifications));
-    
-    setShowSaveMessage(true);
-    setTimeout(() => setShowSaveMessage(false), 3000);
+  const loadSettings = async () => {
+    setLoading(true);
+    try {
+      const [profileData, notificationData] = await Promise.all([
+        getAdminProfile(),
+        getNotificationSettings()
+      ]);
+      setProfile(profileData);
+      setNotifications(notificationData);
+    } catch (err) {
+      console.error('Error loading settings:', err);
+      setError('Failed to load settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveAll = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      const profileResponse = await updateAdminProfile(profile);
+      await updateNotificationSettings(notifications);
+      
+      // If username changed and backend returned a new token, update it
+      if (profileResponse.token) {
+        localStorage.setItem('token', profileResponse.token);
+      }
+      
+      // Refresh user data in localStorage
+      const updatedUser = await getAdminProfile();
+      const currentUser = JSON.parse(localStorage.getItem('user'));
+      const newUserData = {
+        ...currentUser,
+        username: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone
+      };
+      localStorage.setItem('user', JSON.stringify(newUserData));
+      
+      setShowSaveMessage(true);
+      setTimeout(() => setShowSaveMessage(false), 3000);
+      
+    } catch (err) {
+      setError('Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleResetData = () => {
@@ -54,6 +95,14 @@ const Settings = () => {
     URL.revokeObjectURL(url);
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <div className="mb-8 flex justify-between items-center">
@@ -63,22 +112,29 @@ const Settings = () => {
         </div>
         <button
           onClick={handleSaveAll}
-          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+          disabled={saving}
+          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
         >
-          <Save size={18} />
+          {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
           Save All Changes
         </button>
       </div>
 
       {showSaveMessage && (
-        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-bottom-5">
           <CheckCircle size={18} />
           Settings saved successfully!
         </div>
       )}
 
+      {error && (
+        <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4">
+          {error}
+        </div>
+      )}
+
       {/* Profile Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <User size={20} className="text-blue-600" />
           Admin Profile
@@ -88,7 +144,7 @@ const Settings = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
             <input
               type="text"
-              value={profile.name}
+              value={profile.name || ''}
               onChange={(e) => setProfile({ ...profile, name: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
             />
@@ -97,7 +153,7 @@ const Settings = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               type="email"
-              value={profile.email}
+              value={profile.email || ''}
               onChange={(e) => setProfile({ ...profile, email: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
             />
@@ -106,7 +162,7 @@ const Settings = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
             <input
               type="tel"
-              value={profile.phone}
+              value={profile.phone || ''}
               onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
             />
@@ -115,7 +171,7 @@ const Settings = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
             <input
               type="text"
-              value="Super Admin"
+              value="Administrator"
               disabled
               className="w-full px-3 py-2 border rounded-lg bg-gray-50 text-gray-500"
             />
@@ -124,13 +180,13 @@ const Settings = () => {
       </div>
 
       {/* Notification Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <Bell size={20} className="text-blue-600" />
           Notification Preferences
         </h2>
         <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 border rounded-lg">
+          <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
             <div>
               <p className="font-medium">Email Notifications</p>
               <p className="text-sm text-gray-500">Receive email for new appointments</p>
@@ -147,7 +203,7 @@ const Settings = () => {
             </button>
           </div>
 
-          <div className="flex items-center justify-between p-3 border rounded-lg">
+          <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
             <div>
               <p className="font-medium">SMS Notifications</p>
               <p className="text-sm text-gray-500">Receive SMS for urgent updates</p>
@@ -167,7 +223,7 @@ const Settings = () => {
       </div>
 
       {/* System Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <Database size={20} className="text-blue-600" />
           System
@@ -198,7 +254,7 @@ const Settings = () => {
       </div>
 
       <div className="text-center text-sm text-gray-400 mt-8">
-        <p>Settings are saved locally in your browser. Data will persist until cleared.</p>
+        <p>Settings are saved to the server and will persist across sessions.</p>
       </div>
     </div>
   );

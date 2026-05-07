@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const HeaderUserMenu = ({ userName, userEmail, onLogout }) => {
   const [showDropdown, setShowDropdown] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="relative">
@@ -20,14 +22,26 @@ const HeaderUserMenu = ({ userName, userEmail, onLogout }) => {
         <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-50">
           <div className="p-3 border-b">
             <p className="text-sm font-semibold text-gray-800">{userName}</p>
-            <p className="text-xs text-gray-500">{userEmail}</p>
+            <p className="text-xs text-gray-500 truncate">{userEmail}</p>
           </div>
           <div className="py-2">
-            <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+            <button 
+              onClick={() => {
+                setShowDropdown(false);
+                navigate('/admin/profile');
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+            >
               <User size={14} />
               My Profile
             </button>
-            <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+            <button 
+              onClick={() => {
+                setShowDropdown(false);
+                navigate('/admin/settings');
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+            >
               <Settings size={14} />
               Settings
             </button>

@@ -1,28 +1,47 @@
 import { useState, useEffect } from 'react';
 import HeaderWelcome from './HeaderWelcome';
 import HeaderDateTime from './HeaderDateTime';
-import HeaderNotifications from './HeaderNotifications';
 import HeaderUserMenu from './HeaderUserMenu';
+import { getAdminProfile } from '../../services/api';
 
 const Header = () => {
   const [user, setUser] = useState({
-    name: 'Admin User',
+    name: 'Admin',
     email: 'admin@mindcare.com',
-    role: 'Super Admin'
+    role: 'ADMIN'
   });
 
   useEffect(() => {
-    // Load from localStorage after login
-    const userData = localStorage.getItem('adminUser');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
+    loadUserProfile();
   }, []);
 
+  const loadUserProfile = async () => {
+    try {
+      const profile = await getAdminProfile();
+      setUser({
+        name: profile.name,
+        email: profile.email,
+        role: profile.role
+      });
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+      // Try to get from localStorage as fallback
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        setUser({
+          name: parsed.username || parsed.name,
+          email: parsed.email,
+          role: parsed.role
+        });
+      }
+    }
+  };
+
   const handleLogout = () => {
-    localStorage.removeItem('adminUser');
     localStorage.removeItem('token');
-    window.location.href = '/login';
+    localStorage.removeItem('user');
+    window.location.href = '/admin/login';
   };
 
   return (
@@ -31,7 +50,6 @@ const Header = () => {
       
       <div className="flex items-center gap-4">
         <HeaderDateTime />
-        <HeaderNotifications />
         <HeaderUserMenu 
           userName={user.name} 
           userEmail={user.email} 

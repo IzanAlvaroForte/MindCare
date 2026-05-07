@@ -13,7 +13,6 @@ const AdminLogin = () => {
     setLoading(true);
     setError('');
     
-    // Trim whitespace from username only
     const trimmedUsername = username.trim();
     
     if (!trimmedUsername) {
@@ -23,16 +22,40 @@ const AdminLogin = () => {
     }
     
     try {
-      // Mock admin login (connect to backend later)
-      if (trimmedUsername === 'admin' && password === 'admin123') {
-        localStorage.setItem('token', 'mock-admin-token');
-        localStorage.setItem('role', 'ADMIN');
-        navigate('/admin');
-      } else {
-        setError('Invalid admin credentials');
+      // Call the real backend login endpoint
+      const response = await fetch('http://localhost:8080/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: trimmedUsername,
+          password: password
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data || 'Invalid credentials');
       }
+      
+      // Check if user has ADMIN role
+      if (data.role !== 'ADMIN') {
+        setError('Access denied. Admin only.');
+        setLoading(false);
+        return;
+      }
+      
+      // Store token and user data
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data));
+      
+      // Redirect to admin dashboard
+      navigate('/admin');
+      
     } catch (err) {
-      setError('Login failed. Please try again.');
+      setError(err.message || 'Invalid admin credentials');
     } finally {
       setLoading(false);
     }
