@@ -17,7 +17,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/appointments")
-@CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 public class AppointmentController {
     private final AppointmentRepository appointmentRepository;
