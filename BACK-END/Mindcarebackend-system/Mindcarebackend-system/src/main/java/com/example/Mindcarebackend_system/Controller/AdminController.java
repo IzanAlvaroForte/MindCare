@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 
 
 @RestController
@@ -105,13 +107,18 @@ public class AdminController {
     }
 
     @PostMapping("/users")
-    public User createUser(@RequestBody User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword() != null ? user.getPassword() : "default123"));
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
-        if (user.getRole() == null) user.setRole("USER");
-        if (user.getStatus() == null) user.setStatus("ACTIVE");
-        return userRepository.save(user);
+    public ResponseEntity<?> createUser(@RequestBody User user) {
+        try {
+            user.setPassword(passwordEncoder.encode(user.getPassword() != null ? user.getPassword() : "default123"));
+            user.setCreatedAt(LocalDateTime.now());
+            user.setUpdatedAt(LocalDateTime.now());
+            if (user.getRole() == null) user.setRole("USER");
+            if (user.getStatus() == null) user.setStatus("ACTIVE");
+            User saved = userRepository.save(user);
+            return ResponseEntity.ok(saved);
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Email or username already exists");
+        }
     }
 
     @PutMapping("/users/{id}")
