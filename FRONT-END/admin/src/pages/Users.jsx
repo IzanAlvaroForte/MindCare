@@ -5,7 +5,7 @@ import UserSearchBar from '../components/Users/UserSearchBar';
 import UserTable from '../components/Users/UserTable';
 import UserModal from '../components/Users/UserModal';
 import ConfirmDialog from '../components/Common/ConfirmDialog';
-import { getUsers, updateUser, deleteUser } from '../services/api';
+import { getUsers, updateUser, deleteUser, createUser  } from '../services/api';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -69,16 +69,21 @@ const Users = () => {
   };
 
   const handleSaveUser = async (userData) => {
-    try {
-      if (selectedUser) {
-        await updateUser(selectedUser.id, userData);
-      }
-      await loadUsers();
-      setIsModalOpen(false);
-    } catch (err) {
-      setError('Failed to save user');
+  try {
+    if (selectedUser) {
+      // Update existing user
+      await updateUser(selectedUser.id, userData);
+    } else {
+      // Create NEW user - THIS WAS MISSING!
+      await createUser(userData);
     }
-  };
+    await loadUsers(); // Refresh the list
+    setIsModalOpen(false);
+  } catch (err) {
+    console.error('Failed to save user:', err);
+    setError('Failed to save user');
+  }
+};
 
   const handleDeleteUser = (user) => {
     setSelectedUser(user);

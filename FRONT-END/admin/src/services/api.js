@@ -68,7 +68,8 @@ export const getRecentAppointments = async () => {
   return response.json();
 };
 
-// ========== USER MANAGEMENT APIs ==========
+// ======
+// ==== USER MANAGEMENT APIs ==========
 export const getUsers = async () => {
   const token = getToken();
   
@@ -112,7 +113,14 @@ export const createUser = async (userData) => {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify(userData)
+    body: JSON.stringify({
+      username: userData.name,
+      email: userData.email,
+      phone: userData.phone,
+      role: userData.role,
+      status: userData.status,
+      password: 'default123' // Add a default password
+    })
   });
   
   if (!response.ok) {
